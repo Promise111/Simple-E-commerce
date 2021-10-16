@@ -11,6 +11,7 @@ const product = require("./models/product");
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
 const csrf = require("csurf");
+const flash = require("connect-flash");
 const MongoDbStore = require("connect-mongodb-session")(session);
 const MONGODB_URI =
   "mongodb+srv://Promise:WizDon1996@cluster0.sx5qn.mongodb.net/shop?retryWrites=true&w=majority";
@@ -35,6 +36,7 @@ app.use(
   })
 );
 app.use(csrfProtection);
+app.use(flash());
 
 app.use((req, res, next) => {
   if (!req.session.user) {
@@ -53,6 +55,13 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   res.locals.isAuthenticated = req.session.isLoggedIn;
   res.locals.csrfToken = req.csrfToken();
+  next();
+});
+
+app.use((req, res, next) => {
+  if (req.session.isLoggedIn && (req.url == "/login" || req.url == "/signup")) {
+    return res.redirect("/");
+  }
   next();
 });
 
