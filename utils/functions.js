@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const fs = require("fs");
 
 exports.hash = (password) => {
   return new Promise((resolve, reject) => {
@@ -17,5 +18,11 @@ exports.verify = (password, hash) => {
       if (err) reject(err);
       resolve(key == derivedKey.toString("hex"));
     });
+  });
+};
+
+exports.deleteFile = (path) => {
+  fs.unlink(path, (err) => {
+    if (err) throw err;
   });
 };

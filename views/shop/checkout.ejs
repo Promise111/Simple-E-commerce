@@ -1,10 +1,35 @@
 <%- include("../layouts/head.ejs")%>
     <title><%= pageTitle %></title>
-    <link rel="stylesheet" href="/css/product.css">
-    <link rel="stylesheet" href="/css/forms.css">
+    <link rel="stylesheet" href="/css/cart.css">
 </head>
 <body>
     <%- include("../layouts/navigation.ejs") %>
     <main>
+        <ul class="cart__item-list">
+            <% products.forEach(p => {%>
+                <li class="cart__item">
+                    <h1><%= p.productId.title %></h1>
+                    <img class="span-img" src="<%= p.productId.imageUrl %>" alt="<%= p.productId.title %>">
+                    <h2>Quantity: <%= p.quantity %></h2>
+                </li>
+            <% }) %>
+        </ul>
+        <div class="centered">
+            <h1>Total: <%= totalSum %></h1>
+        </div>
+        <div>
+            <form id="paymentForm">
+             <div class="form-group">
+               <input type="email" id="email-address" value="<%= user.email %>" required hidden />
+             </div>
+             <div class="form-group">
+               <input type="tel" id="amount" value="<%= totalSum %>" required hidden />
+             </div>
+             <div class="form-submit">
+               <button type="submit" class="btn pay" onclick="payWithPaystack()"> Pay with card </button>
+             </div>
+           </form>
+           <script src="https://js.paystack.co/v1/inline.js"></script>
+        </div>
     </main>
 <%- include("../layouts/footer.ejs") %>

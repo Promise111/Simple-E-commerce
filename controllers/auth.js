@@ -1,10 +1,12 @@
 const crypto = require("crypto");
+const { validationResult } = require("express-validator");
 const User = require("../models/user");
 const { hash, verify } = require("../utils/functions");
 const mailgun = require("mailgun-js");
-const DOMAIN = "sandbox9815014643954952be6288399b141d18.mailgun.org";
-const apiKey = "189d7ea75caa13356e677346f6b85894-2ac825a1-66376cec";
-const mg = mailgun({ apiKey: apiKey, domain: DOMAIN });
+const mg = mailgun({
+  apiKey: process.env.MAILGUN_API_KEY,
+  domain: process.env.DOMAIN,
+});
 
 exports.getLogin = async (req, res) => {
   let message = req.flash("error");
@@ -17,17 +19,34 @@ exports.getLogin = async (req, res) => {
     pageTitle: "Login",
     path: "/login",
     errorMessage: message,
+    old: req.body,
+    validationErrors: [],
   });
 };
 
-exports.postLogin = async (req, res) => {
+exports.postLogin = async (req, res, next) => {
   const email = req.body.email.toLowerCase();
   const password = req.body.password;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(422).render("auth/login", {
+      pageTitle: "Login",
+      path: "/login",
+      errorMessage: errors.array()[0].msg,
+      old: req.body,
+      validationErrors: errors.array(),
+    });
+  }
   User.findOne({ email: email })
     .then((user) => {
       if (!user) {
-        req.flash("error", "Invalid email and password.");
-        return res.redirect("/login");
+        return res.status(422).render("auth/login", {
+          pageTitle: "Login",
+          path: "/login",
+          errorMessage: "Invalid email and password.",
+          old: req.body,
+          validationErrors: [],
+        });
       }
       verify(password, user.password)
         .then((isValid) => {
@@ -39,24 +58,31 @@ exports.postLogin = async (req, res) => {
               if (!err) return res.redirect("/");
             });
           }
-          req.flash("error", "Invalid email and password.");
-          return res.redirect("/login");
+          return res.status(422).render("auth/login", {
+            pageTitle: "Login",
+            path: "/login",
+            errorMessage: "Invalid email and password.",
+            old: req.body,
+            validationErrors: [],
+          });
         })
-        .catch((err) => console.log(err));
+        .catch((error) => {
+          return next(error);
+        });
     })
     .catch((error) => {
-      console.log(error);
+      return next(error);
     });
 };
 
-exports.postLogout = async (req, res) => {
+exports.postLogout = async (req, res, next) => {
   req.session.destroy((error) => {
-    console.log(error);
+    if (error) next(error);
     if (!error) return res.redirect("/");
   });
 };
 
-exports.getSignUp = async (req, res) => {
+exports.getSignUp = async (req, res, next) => {
   let message = req.flash("error");
   if (message.length <= 0) {
     message = null;
@@ -68,56 +94,53 @@ exports.getSignUp = async (req, res) => {
     path: "/signup",
     isAuthenticated: req.session.isLoggedIn,
     errorMessage: message,
+    old: req.body,
+    validationErrors: [],
   });
 };
 
-exports.postSignUp = async (req, res) => {
+exports.postSignUp = async (req, res, next) => {
   const email = req.body.email.toLowerCase();
   const password = req.body.password;
-  const confirmPassword = req.body.confirmPassword;
-  const hashedP = await hash(password);
-  User.findOne({ email: email })
-    .then((userDoc) => {
-      if (userDoc) {
-        req.flash("error", "E-mail already exists.");
-        return res.redirect("/signup");
-      }
-      if (password != confirmPassword) {
-        req.flash("error", "Password must match confirm password field.");
-        return res.redirect("/signup");
-      }
-      return User.create({
-        email: email,
-        password: hashedP,
-        cart: { items: [] },
-      })
-        .then((user) => {
-          req.flash("status", "Account created, please log in.");
-          res.redirect("/login");
-          return mg.messages().send(
-            {
-              from: "Shop <me@shop.com>",
-              to: `${email}`,
-              subject: "Signup successful!",
-              html: "<h1>You successfuly signed up!</h1>",
-            },
-            (err, body) => {
-              if (err) console.log(err);
-              if (!err) console.log(body);
-            }
-          );
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+  const hashed = await hash(password);
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(422).render("auth/signup", {
+      pageTitle: "Signup",
+      path: "/signup",
+      isAuthenticated: req.session.isLoggedIn,
+      errorMessage: errors.array()[0].msg,
+      old: req.body,
+      validationErrors: errors.array(),
+    });
+  }
+  return User.create({
+    email: email,
+    password: hashed,
+    cart: { items: [] },
+  })
+    .then((user) => {
+      req.flash("status", "Account created, please log in.");
+      res.redirect("/login");
+      return mg.messages().send(
+        {
+          from: "Shop <me@shop.com>",
+          to: `${email}`,
+          subject: "Signup successful!",
+          html: "<h1>You successfuly signed up!</h1>",
+        },
+        (err, body) => {
+          if (err) return next(err);
+          if (!err) console.log(body);
+        }
+      );
     })
-    .then((result) => {})
     .catch((error) => {
-      console.log(error);
+      return next(error);
     });
 };
 
-exports.getReset = async (req, res) => {
+exports.getReset = async (req, res, next) => {
   let message = req.flash("error");
   if (message.length <= 0) {
     message = null;
@@ -131,7 +154,7 @@ exports.getReset = async (req, res) => {
   });
 };
 
-exports.postReset = async (req, res) => {
+exports.postReset = async (req, res, next) => {
   const token = crypto.randomBytes(32).toString("hex");
   const email = req.body.email;
   if (token) {
@@ -157,20 +180,20 @@ exports.postReset = async (req, res) => {
             `,
           },
           (err, body) => {
-            if (err) console.log(err);
+            if (err) return next(err);
             if (!err) console.log(body);
           }
         );
       })
       .catch((error) => {
-        console.log(error);
+        return next(error);
       });
   } else {
     return res.redirect("back");
   }
 };
 
-exports.getNewPassword = async (req, res) => {
+exports.getNewPassword = async (req, res, next) => {
   const token = req.params.token;
   if (!token) {
     req.flash("error", "Token required.");
@@ -195,11 +218,13 @@ exports.getNewPassword = async (req, res) => {
         passwordToken: token,
       });
     })
-    .catch((error) => console.log(error));
+    .catch((error) => {
+      return next(error);
+    });
   let message = req.flash("error");
 };
 
-exports.postNewPassword = async (req, res) => {
+exports.postNewPassword = async (req, res, next) => {
   const newPassword = req.body.password;
   const userId = req.body.userId;
   const passwordToken = req.body.passwordToken;
@@ -219,5 +244,7 @@ exports.postNewPassword = async (req, res) => {
     .then((result) => {
       return res.redirect("/login");
     })
-    .catch((error) => console.log(error));
+    .catch((error) => {
+      return next(error);
+    });
 };
