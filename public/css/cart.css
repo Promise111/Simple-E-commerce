@@ -14,6 +14,18 @@
   padding: 1rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.26);
   margin-bottom: 1rem;
+  border-radius: 1rem;
+}
+
+.cart__item:hover {
+  /* width: 39rem; */
+  margin-left: -5px;
+  margin-right: -5px;
+}
+
+.cart__item-list a {
+  text-decoration: none;
+  color: black;
 }
 
 .cart__item h1,

@@ -142,45 +142,46 @@ exports.getCheckout = async (req, res, next) => {
 };
 
 exports.postOrder = async (req, res, next) => {
-  try {
-    const reference = req.params.reference;
-    const url = `https://api.paystack.co/transaction/verify/${reference}`;
-    const token = "sk_test_d09f7b7c4f9ac64ec80afbcc122cd5b21f22b0e6";
-    const isPaymentValid = await axios({
-      method: "get",
-      url: url,
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+  const reference = req.params.reference;
+  const url = `https://api.paystack.co/transaction/verify/${reference}`;
+  const token = "sk_test_d09f7b7c4f9ac64ec80afbcc122cd5b21f22b0e6";
+  const isPaymentValid = await axios({
+    method: "get",
+    url: url,
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  // console.log(isPaymentValid.data.status, isPaymentValid.data.data.customer.email, isPaymentValid.data.data.amount);
+  req.user
+    .populate("cart.items.productId")
+    .then((user) => {
+      const products = user.cart.items.map((item) => {
+        return { quantity: item.quantity, product: { ...item.productId._doc } };
+      });
+      if (
+        isPaymentValid.data.status !== true ||
+        isPaymentValid.data.data.reference != reference
+      )
+        return res.redirect("/checkout");
+      const order = new Order({
+        user: {
+          email: req.user.email,
+          userId: req.user,
+        },
+        products: products,
+      });
+      return order.save();
+    })
+    .then((result) => {
+      return req.user.clearCart();
+    })
+    .then((result) => {
+      return res.redirect("/orders");
+    })
+    .catch((err) => {
+      console.log(err);
     });
-    console.log(reference, isPaymentValid.data);
-  } catch (error) {
-    console.log(error.message);
-  }
-  // req.user
-  //   .populate("cart.items.productId")
-  //   .then((user) => {
-  //     const products = user.cart.items.map((item) => {
-  //       return { quantity: item.quantity, product: { ...item.productId._doc } };
-  //     });
-  //     const order = new Order({
-  //       user: {
-  //         email: req.user.email,
-  //         userId: req.user,
-  //       },
-  //       products: products,
-  //     });
-  //     return order.save();
-  //   })
-  //   .then((result) => {
-  //     return req.user.clearCart();
-  //   })
-  //   .then((result) => {
-  //     return res.redirect("/orders");
-  //   })
-  //   .catch((err) => {
-  //     console.log(err);
-  //   });
 };
 
 exports.getOrders = async (req, res, next) => {

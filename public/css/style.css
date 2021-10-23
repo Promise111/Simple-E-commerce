@@ -25,7 +25,7 @@ form {
 
 .centered a {
   text-decoration: none;
-  color: #1F4E5F;
+  color: #1f4e5f;
 }
 
 .centered a:hover {
@@ -43,7 +43,7 @@ form {
 .main-header {
   width: 100%;
   height: 3.5rem;
-  background-color: #1F4E5F;
+  background-color: #1f4e5f;
   padding: 0 1.5rem;
   display: flex;
   align-items: center;
@@ -135,7 +135,7 @@ form {
 .mobile-nav__item a.active,
 .mobile-nav__item button:hover,
 .mobile-nav__item button:active {
-  background: #1F4E5F;
+  background: #1f4e5f;
   color: white;
   border-radius: 3px;
 }
@@ -217,8 +217,8 @@ form {
   padding: 0.25rem 1rem;
   text-decoration: none;
   font: inherit;
-  border: 1px solid #1F4E5F;
-  color: #1F4E5F;
+  border: 1px solid #1f4e5f;
+  color: #1f4e5f;
   background: white;
   border-radius: 3px;
   cursor: pointer;
@@ -226,7 +226,7 @@ form {
 
 .btn:hover,
 .btn:active {
-  background-color: #1F4E5F;
+  background-color: #1f4e5f;
   color: white;
 }
 
@@ -276,19 +276,19 @@ form {
 
 .pagination a {
   /* border: 1px solid rgb(189, 176, 176); */
-  border: 1px solid #1F4E5F;
+  border: 1px solid #1f4e5f;
   text-decoration: none;
   text-align: center;
   padding: 0.5rem;
   border-radius: 50px;
-  color: #1F4E5F;
+  color: #1f4e5f;
   margin: 0 5px;
 }
 
 .pagination a:hover,
 .pagination a:active,
 .pagination a.selected {
-  background-color: #1F4E5F;
+  background-color: #1f4e5f;
   color: white;
 }
 
@@ -319,6 +319,14 @@ form {
   justify-content: center;
 }
 
-.span-img{
+.span-img {
   width: 10%;
+}
+
+.img-link {
+  display: block;
+}
+
+.password-reset:hover {
+  color: #AACFD0 !important;
 }
